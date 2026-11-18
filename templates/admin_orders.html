@@ -1,48 +1,44 @@
 <!DOCTYPE html>
 <html>
-    <head>
-        <title>All Orders</title>
-        <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    </head>
-</html>
+<head>
+    <title>All Orders</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
 <body>
+    {% include "_flash.html" %}
     <header>
         <h1>Admin</h1>
-        <a href="/logout" class="logout">Logout</a>
-
+        <nav>
+            <a href="/logout"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
+        </nav>
     </header>
-    <main>
-        <br><br>
-        <h2>All Orders</h2>
 
+    <main>
+        <h2>All Orders</h2>
         <section class="products">
             {% for order2 in orders2 %}
-            <div class="product-list">
+            <div class="product">
                 <h2>Order #{{ order2.id }}</h2>
-                <h2>Purchaser: {{ order2.name }}</h2>
-                <h2>Shipped to: {{ order2.address }}</h2>
-                <h2>Status: {{ order2.status }}</h2>
+                <p>Purchaser: {{ order2.name }}</p>
+                <p>Shipped to: {{ order2.address }}</p>
+                <p>Status: {{ order2.status }}</p>
+
                 <form action="{{ url_for('update_status', order2_id=order2.id) }}" method="POST">
-                    <select class="status" name="status">
+                    <select name="status">
                         <option value="Pending" {% if order2.status == "Pending" %}selected{% endif %}>Pending</option>
                         <option value="Shipped" {% if order2.status == "Shipped" %}selected{% endif %}>Shipped</option>
                         <option value="Delivered" {% if order2.status == "Delivered" %}selected{% endif %}>Delivered</option>
                     </select>
-                    <br><br>
-                    <button class="checkout-button" type="submit">Update</button>
+                    <br>
+                    <button class="btn" type="submit">Update</button>
                 </form>
-                
-                <p class="price">Total: ${{ order2.total }}</p>
-                <br>
-                {% include "_order_items.html" with context %}
-                <br>
-                
-                
 
+                <p class="price">Total: ${{ order2.total }}</p>
+                {% include "_order_items.html" with context %}
             </div>
             {% endfor %}
         </section>
-
     </main>
-
 </body>
+</html>

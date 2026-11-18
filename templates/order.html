@@ -1,34 +1,29 @@
 <!DOCTYPE html>
 <html>
-    <head>
-        <title>Order Confirmed</title>
-        <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    </head>
+<head>
+    <title>Order Confirmed</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
 <body>
+    {% include "_flash.html" %}
     <header>
         <h1>Order Received</h1>
-        <nav>
-            <a href="/" class="home">Home</a>
-            <a href="/live" class="live">Videos</a>
-            <a href="/cart" class="cart">Cart</a> 
-            <a href="/profile" class="profile">Profile</a>
-        </nav>
+        {% include "_nav.html" %}
     </header>
+
     <main>
-        <br><br>s
-        <h2 class="label">Thank You!</h2>
-        <p class="label">{{ name }}</p>
-        <p class="label">Shipped to: {{ address }}</p>
-        <section  class="products">
+        <h2>Thank You, {{ name }}!</h2>
+        <p>Shipped to: {{ address }}</p>
+
+        <section class="products">
             <div class="product">
-            {% include "_order_items.html" with context %}
-            <br>
+                {% include "_order_items.html" with context %}
             </div>
         </section>
-        <p><strong>Total: ${{ order2.total }}</strong></p>
-        <br><br><br>
-        <a href="/" class="checkout-button">Continue shopping</a>
 
+        <p class="price">Total: ${{ order2.total }}</p>
+        <a class="btn" href="{{ url_for('home') }}">Continue shopping</a>
     </main>
 </body>
 </html>

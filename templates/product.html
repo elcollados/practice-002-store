@@ -2,55 +2,39 @@
 <html>
 <head>
     <title>{{ product2.name }}</title>
-
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 <body>
-    {% with messages = get_flashed_messages() %}
-        {% for message in messages %}
-            <p class="flash">{{ message }}</p>
-        {% endfor %}
-    {% endwith %}
-
+    {% include "_flash.html" %}
     <header>
         <h1>Product Information</h1>
-        <nav>
-            <a href="/" class="home">Home</a>
-            <a href="/lvie" class="live">Videos</a>
-            <a href="/cart" class="cart">Cart</a>
-            <a href="/profile" class="profile">Profile</a>
-        </nav>
+        {% include "_nav.html" %}
     </header>
+
     <main>
+        <section class="products">
+            <div class="product">
+                <img src="{{ url_for('static', filename='image/' + product2.image) }}" alt="{{ product2.name }}">
+                <p class="name">{{ product2.name }}</p>
+                <p class="price">${{ product2.price }}</p>
 
-        <br><br>
-        <h2 class="label">Product Details</h2>
-        <div class="product">
-            <img src="{{ url_for('static', filename='image/' + product2.image) }}" alt="{{ product2.name }}">
-            <a class="name" href="/product">{{ product2.name }}</a>
-            <p class="price">${{ product2.price }}</p>
-            {% if product2.stock > 0 %}
-            <p class="stock">stock: {{ product2.stock }}</p>
-            {% else %}
-            <p class="stock out">Out of stock</p>
-            {% endif %}
-            <a class="view-product" href="/">Back to Home</a>
+                {% if product2.stock > 0 %}
+                    <p class="stock">In stock: {{ product2.stock }}</p>
+                {% else %}
+                    <p class="stock out">Out of stock</p>
+                {% endif %}
 
-            {% if product2.stock > 0 %}
-                <a class="view-product" href="{{ url_for('add_to_cart', product2_id=product2.id) }}">Add to Cart</a>
-            {% else %}
-                <p class="view-product">Out of Stock</p>
-            {% endif %}
-
-        </div>
-
-    
-
-
-
-
+                <div class="actions">
+                    <a class="btn btn-outline" href="{{ url_for('home') }}">Back to Home</a>
+                    {% if product2.stock > 0 %}
+                        <a class="btn" href="{{ url_for('add_to_cart', product2_id=product2.id) }}">Add to Cart</a>
+                    {% else %}
+                        <span class="btn disabled">Out of stock</span>
+                    {% endif %}
+                </div>
+            </div>
+        </section>
     </main>
-
-
 </body>
 </html>

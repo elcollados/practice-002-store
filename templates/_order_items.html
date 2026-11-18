@@ -1,4 +1,6 @@
 {% for item2 in order2.products %}
-<h2>{{ item2.name }}</h2>
-<p class="price">$ {{ item2.price }} x {{ item2.quantity }} pcs = ${{ item2.subtotal }}</p>
+<div class="order-item">
+    <h3>{{ item2.name }}</h3>
+    <p>${{ item2.price }} x {{ item2.quantity }} pcs = <span class="subtotal">${{ item2.subtotal }}</span></p>
+</div>
 {% endfor %}

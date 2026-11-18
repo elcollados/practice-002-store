@@ -1,66 +1,57 @@
 <!DOCTYPE html>
 <html>
-    <head>
-        <title>Cart</title>
-        <link rel="stylesheet" href="{{ url_for('static', filename='style.css' ) }}">
-    </head>
+<head>
+    <title>Cart</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
 <body>
-    {% with messages = get_flashed_messages() %}
-        {% for message in messages %}
-            <p class="flash">{{ message }}</p>
-        {% endfor %}
-    {% endwith %}
-
+    {% include "_flash.html" %}
     <header>
         <h1>Cart</h1>
-        
-        <nav>
-            <a href="/" class="home">Home</a>
-            <a href="/live" class="live">Videos</a>
-            <a href="/cart" class="cart">Cart</a>
-            <a href="/profile" class="profile">Profile</a>
-            <a href="/login" class="home">Login</a>
-            <a href="/register" class="register">Register</a>
-        </nav>
-
+        {% include "_nav.html" %}
     </header>
 
     <main>
-        <br><br>
-        <h2 class="label">Your Cart</h2>
         {% if cart_products2 %}
-            <section class="products">
+        <section class="products">
             {% for product2 in cart_products2 %}
             <div class="product">
-                <h2 class="name">{{ product2.name }}</h2>
-                <p class="price">${{ product2.price }}</p> 
-                <br>
-                <a class="view-product" href="{{ url_for('product_detail', product2_id=product2.id) }}">View product</a>
-                <br><br>
-                <a class="view-product" href="{{ url_for('decrease_quantity', product2_id=product2.id) }}">-</a>
-                <p class="view-product">{{ product2.quantity }}</p>
-                {% if product2.quantity <  product2.stock %}
-                    <a class="view-product" href="{{ url_for('increase_quantity', product2_id=product2.id) }}">+</a>
-                {% else %}
-                    <span class="view-product">Max</span>
-                {% endif %}
-                <br>
-                <a class="view-product" href="{{ url_for('remove_cart', product2_id=product2.id) }}">Remove</a>
-            </div>
+                <a class="name" href="{{ url_for('product_detail', product2_id=product2.id) }}">{{ product2.name }}</a>
+                <p class="price">${{ product2.price }}</p>
 
+                <div class="qty-row">
+                    <form method="POST" action="{{ url_for('decrease_quantity', product2_id=product2['id']) }}">
+                        <button type="submit" class="btn">-</button>
+                    </form>
+                    <span>{{ product2.quantity }}</span>
+                    {% if product2.quantity < product2.stock %}
+                        <form method="POST" action="{{ url_for('increase_quantity', product2_id=product2['id']) }}">
+                            <button type="submit" class="btn">+</button>
+                        </form>
+                    {% else %}
+                        <span class="btn disabled">Out of stock</span>
+                    {% endif %}
+                </div>
+
+                <form method="POST" action="{{ url_for('remove_cart', product2_id=product2.id) }}">
+                    <button type="submit" class="btn">Remove</button>
+                </form>
+            </div>
             {% endfor %}
-            </section>
-            <p class="label">Total item: {{ total_quantity2 }}</p><br>
-            <p><strong>Total price: ${{ total_price2 }}</strong></p><br>
-            <a class="checkout-button" href="/">Continue shopping</a>
-            <a class="checkout-button" href="/checkout">Checkout</a>
+        </section>
+
+        <p class="summary">Total items: {{ total_quantity2 }}</p>
+        <p class="summary"><strong>Total price: ${{ total_price2 }}</strong></p>
+
+        <div class="btn-row">
+            <a class="btn btn-outline" href="{{ url_for('home') }}">Continue shopping</a>
+            <a class="btn" href="/checkout"><i class="fa-solid fa-credit-card"></i> Checkout</a>
+        </div>
         {% else %}
             <h2>Your cart is empty.</h2>
-            <a class="checkout-button" href="/">Continue shopping</a>
+            <a class="btn" href="{{ url_for('home') }}">Continue shopping</a>
         {% endif %}
-
-
     </main>
-    
 </body>
 </html>

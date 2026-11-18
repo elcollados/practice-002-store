@@ -19,22 +19,19 @@ if not SECRET_KEY:
 
 app.secret_key = SECRET_KEY
 
-
-orders2 = []
-products2 = [
+starting_products = [
     {"id": 0, "name": "Monitor", "price": 1, "stock": 0, "image": "monitor1.jfif"},
-    {"id": 1, "name": "keyboard", "price": 100, "stock": 10, "image": "keyboard1.jfif"},
+    {"id": 1, "name": "Keyboard", "price": 100, "stock": 10, "image": "keyboard1.jfif"},
     {"id": 2, "name": "Mouse", "price": 200, "stock": 22, "image": "mouse1.webp"},
-    {"id": 3, "name": "CPU-H110M", "price": 300, "stock": 33, "image": "H110M1.jpg"},
-    {"id": 4, "name": "SSD 4GB RAM", "price": 400, "stock": 44, "image": "SSD1.webp"},
-    {"id": 5, "name": "Power Suply", "price": 500, "stock": 55, "image": "PSU1.webp"},
+    {"id": 3, "name": "Motherboard-H110M", "price": 300, "stock": 33, "image": "H110M1.jpg"},
+    {"id": 4, "name": "SSD", "price": 400, "stock": 44, "image": "SSD1.webp"},
+    {"id": 5, "name": "Power Supply", "price": 500, "stock": 55, "image": "PSU1.webp"},
     {"id": 6, "name": "PC case", "price": 600, "stock": 66, "image": "pccase1.jpg"},
     {"id": 7, "name": "GPU-GTX1050", "price": 700, "stock": 77, "image": "GTX10501.jfif"},
-    {"id": 8, "name": "Motherboard-G4560", "price": 800, "stock": 88, "image": "G45601.jfif"},
-    {"id": 9, "name": "4Gb RAM", "price": 900, "stock": 99, "image": "4GBRAM1.jfif"},
+    {"id": 8, "name": "CPU-G4560", "price": 800, "stock": 88, "image": "G45601.jfif"},
+    {"id": 9, "name": "4GB RAM", "price": 900, "stock": 99, "image": "4GBRAM1.jfif"},
     {"id": 10, "name": "CPU Cooler", "price": 1000, "stock": 100, "image": "cpucooler1.webp"}
 ]
-
 
 def get_db():
     database_url = os.getenv("DATABASE_URL")
@@ -95,10 +92,42 @@ def create_tables():
         )
     """,())
 
+    execute_query(cursor, """
+        CREATE TABLE IF NOT EXISTS products2 (
+            id INTEGER PRIMARY KEY,
+            name TEXT NOT NULL,
+            price REAL NOT NULL,
+            stock INTEGER NOT NULL,
+            image TEXT NOT NULL
+        )
+    """, ())
+
+    execute_query(cursor, "SELECT COUNT(*) AS total FROM products2", ())
+    if cursor.fetchone()["total"] == 0:
+        for p in starting_products:
+            execute_query(cursor, "INSERT INTO products2 (id, name, price, stock, image) VALUES (?, ?, ?, ?, ?)",
+                          (p["id"], p["name"], p["price"], p["stock"], p["image"]))
+
     conn.commit()
     conn.close()
 
 create_tables()
+
+def get_all_products():
+    conn = get_db()
+    cursor = conn.cursor()
+    execute_query(cursor, "SELECT * FROM products2 ORDER BY id", ())
+    products = cursor.fetchall()
+    conn.close()
+    return products
+
+def get_product(product_id):
+    conn = get_db()
+    cursor = conn.cursor()
+    execute_query(cursor, "SELECT * FROM products2 WHERE id = ?", (product_id,))
+    product = cursor.fetchone()
+    conn.close()
+    return product
 
 def admin_required():
     if "user_id" not in session:
@@ -114,7 +143,7 @@ def admin_required():
 def register():
     if request.method == "POST":
         name = request.form["name"]
-        email = request.form["email"]
+        email = request.form["email"].strip().lower()
         password = request.form["password"]
 
         password_hash = generate_password_hash(password)
@@ -128,7 +157,8 @@ def register():
                 (name, email, password_hash)
             )
             conn.commit()
-        except sqlite3.IntegrityError:
+        except (sqlite3.IntegrityError, psycopg2.IntegrityError):
+            conn.rollback()
             conn.close()
             return "Email already registered"
 
@@ -137,11 +167,10 @@ def register():
 
     return render_template("register.html")
 
-
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
-        email = request.form["email"]
+        email = request.form["email"].strip().lower()
         password = request.form["password"]
 
         conn = get_db()
@@ -159,56 +188,61 @@ def login():
 
     return render_template("login.html")
 
-
 @app.route("/logout")
 def logout():
     session.pop("user_id", None)
     session.pop("user_name", None)
     return redirect(url_for("home"))
 
-
-
 @app.route("/")
 def home():
-    return render_template("home.html", products2=products2)
-
+    return render_template("home.html", products2=get_all_products())
 
 @app.route("/product/<int:product2_id>")
 def product_detail(product2_id):
-    for product2 in products2:
-        if product2["id"] == product2_id:
-            return render_template("product.html", product2=product2) 
+    product2 = get_product(product2_id)    
+    if product2:
+        return render_template("product.html", product2=product2) 
     return "Product not found", 404
-
 
 @app.route("/search")
 def search():
     query = request.args.get("search", "")
 
     results = []
-    for product2 in products2:
+    for product2 in get_all_products():
         if query.lower() in product2["name"].lower():
             results.append(product2)
 
     return render_template("search.html", results=results, query=query)
 
-
 @app.route("/live") 
 def live():
     return render_template("live.html")
 
-
 @app.route("/place-order", methods=["POST"])
 def place_order():
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+    
     name = request.form["name"]
     address = request.form["address"]
 
     cart_data2 = session.get("cart", {})
     user_id2 = session.get("user_id")
 
+    if not cart_data2:
+        return redirect(url_for("cart"))
+
+    all_products = get_all_products()
+    for product2 in all_products:
+        key = str(product2["id"])
+        if key in cart_data2 and cart_data2[key] > product2["stock"]:
+            flash("Not enough stock for " + product2["name"])
+            return redirect(url_for("cart"))
 
     cart_products2 = []
-    for product2 in products2:
+    for product2 in all_products:
         key = str(product2["id"])
         if key in cart_data2:
             quantity2 = cart_data2[key]
@@ -224,23 +258,36 @@ def place_order():
     for product2 in cart_products2:
         total += product2["subtotal"]
 
-
     conn = get_db()
     cursor = conn.cursor()
-    
-    execute_query(cursor,
-        "INSERT INTO orders2 (user_id, name, address, total, status) VALUES (?, ?, ?, ?, ?) RETURNING id",
-        (user_id2, name, address, total, "Pending" )
-    )
-    order_id2 = cursor.fetchone()["id"]
-    
-    for product2 in cart_products2:
+
+    try:
         execute_query(cursor,
-            "INSERT INTO order_items2 (order_id, name, price, quantity, subtotal) VALUES (?, ?, ?, ?, ?)",
-            (order_id2, product2["name"], product2["price"], product2["quantity"], product2["subtotal"]))
+            "INSERT INTO orders2 (user_id, name, address, total, status) VALUES (?, ?, ?, ?, ?) RETURNING id",
+            (user_id2, name, address, total, "Pending")
+        )
+        order_id2 = cursor.fetchone()["id"]
     
-    conn.commit()
-    conn.close()
+        for product2 in cart_products2:
+            execute_query(cursor,
+                "INSERT INTO order_items2 (order_id, name, price, quantity, subtotal) VALUES (?, ?, ?, ?, ?)",
+                (order_id2, product2["name"], product2["price"], product2["quantity"], product2["subtotal"]))
+
+        for key, qty in cart_data2.items():
+            execute_query(cursor,
+                "UPDATE products2 SET stock = stock - ? WHERE id = ? AND stock >= ?",
+                (qty, int(key), qty))
+            if cursor.rowcount == 0:
+                conn.rollback()
+                flash("Not enough stock for an item. Please check your cart.")
+                return redirect(url_for("cart"))
+    
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
 
     session.pop("cart", None)
 
@@ -257,8 +304,7 @@ def place_order():
         order2=order2
     )
 
-
-@app.route("/admin/orders")
+@app.route("/admin/orders") 
 def admin_orders():
     if not admin_required():
         return redirect(url_for("login"))
@@ -268,11 +314,23 @@ def admin_orders():
 
     execute_query(cursor,"SELECT * FROM orders2 ORDER BY id DESC",())
     all_orders = cursor.fetchall()
+
+    orders_with_items = []
+    for order2 in all_orders:
+        execute_query(cursor, "SELECT * FROM order_items2 WHERE order_id = ?", (order2["id"],))
+        items2 = cursor.fetchall()
+        orders_with_items.append({
+            "id": order2["id"],
+            "name": order2["name"],
+            "address": order2["address"],
+            "total": order2["total"],
+            "status": order2["status"],
+            "products": items2
+        })
+
     conn.close()
 
-    return render_template("admin_orders.html", orders2=all_orders)
-
-
+    return render_template("admin_orders.html", orders2=orders_with_items)
 
 @app.route("/admin/update-status/<int:order2_id>", methods=["POST"])
 def update_status(order2_id):
@@ -281,13 +339,17 @@ def update_status(order2_id):
 
     new_status = request.form["status"]
 
+    if new_status not in ["Pending", "Shipped", "Delivered"]:
+        return redirect(url_for("admin_orders"))
+
     conn = get_db()
     cursor = conn.cursor()
     execute_query(cursor,"SELECT status FROM orders2 WHERE id = ?", (order2_id,))
     row = cursor.fetchone()
 
-    if row and row["status"] == "Shipped" and new_status == "Pending":
-        conn.closed
+    steps = ["Pending", "Shipped", "Delivered"]
+    if row and steps.index(new_status) < steps.index(row["status"]):
+        conn.close()
         return redirect(url_for("admin_orders"))
 
     execute_query(cursor, "UPDATE orders2 SET status = ? WHERE id = ?", (new_status, order2_id))
@@ -296,9 +358,11 @@ def update_status(order2_id):
 
     return redirect(url_for("admin_orders"))
 
-
 @app.route("/checkout")
 def checkout():
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+    
     cart_data = session.get("cart", {})
 
     if not cart_data:   
@@ -306,49 +370,45 @@ def checkout():
 
     return render_template("checkout.html")
 
-
-
-@app.route("/add-to-cart/<int:product2_id>")
+@app.route("/add-to-cart/<int:product2_id>", methods=["POST"])
 def add_to_cart(product2_id):
     cart = session.get("cart", {})
     key  = str(product2_id)
 
-    product2 = next((p for p in products2 if p["id"] == product2_id), None)
+    product2 = get_product(product2_id)
     if product2 is None:
-        return redirect(request.referrer)
+        return redirect(request.referrer or url_for("home"))
 
     current_qty = cart.get(key, 0)
 
     if current_qty >= product2["stock"]:
         flash("Sorry, no more stock for this item.")
-        return redirect(request.referrer)
+        return redirect(request.referrer or url_for("home"))
 
     cart[key] = current_qty + 1
     session["cart"] = cart
-    return redirect(request.referrer)
+    return redirect(request.referrer or url_for("cart"))
 
-
-@app.route("/increase-quantity/<int:product2_id>")
+@app.route("/increase-quantity/<int:product2_id>", methods=["POST"])
 def increase_quantity(product2_id):
     cart = session.get("cart", {})
     key = str(product2_id)
 
-    product2 = next((p for p in products2 if p["id"] == product2_id), None)
+    product2 = get_product(product2_id)
     if product2 is None:
-        return redirect(request.referrer)
+        return redirect(request.referrer or url_for("home"))
 
     current_qty = cart.get(key, 0)
 
     if current_qty >= product2["stock"]:
         flash("Sorry, no more stock for this item.")
-        return redirect(request.referrer)
+        return redirect(request.referrer or url_for("cart"))
         
     cart[key] = current_qty + 1
     session["cart"] = cart
     return redirect(url_for("cart"))
 
-
-@app.route("/decrease-quantity/<int:product2_id>")
+@app.route("/decrease-quantity/<int:product2_id>", methods=["POST"])
 def decrease_quantity(product2_id):
     cart = session.get("cart", {})
     key = str(product2_id)
@@ -361,7 +421,7 @@ def decrease_quantity(product2_id):
     session["cart"] = cart
     return redirect(url_for("cart"))
 
-@app.route("/remove-cart/<int:product2_id>")
+@app.route("/remove-cart/<int:product2_id>", methods=["POST"])
 def remove_cart(product2_id):
     cart = session.get("cart", {})
     key = str(product2_id)
@@ -373,13 +433,12 @@ def remove_cart(product2_id):
     return redirect(url_for("cart"))
 
 
-
 @app.route("/cart")
 def cart():
     cart_data2 = session.get("cart", {})
 
     cart_products2 = []
-    for product2 in products2:
+    for product2 in get_all_products():
         key = str(product2["id"]) 
         if key in cart_data2:
             quantity2 = cart_data2[key]
@@ -402,13 +461,6 @@ def cart():
         
     return render_template("cart.html", cart_products2=cart_products2, total_price2=total_price2,total_quantity2=total_quantity2)
 
-
-@app.route("/clear-cart")
-def clear_session():
-    session.clear()
-    return "Session cleared"
-
-
 @app.route("/profile")
 def profile():
     if "user_id" not in session:
@@ -419,6 +471,9 @@ def profile():
 
     execute_query(cursor,"SELECT * FROM users2 WHERE id = ?", (session["user_id"],))
     user = cursor.fetchone()
+    if not user:
+        conn.close()
+        return redirect(url_for("login"))
 
     execute_query(cursor,"SELECT * FROM orders2 WHERE user_id = ? ORDER BY id DESC", (session["user_id"],))
     user_orders2 = cursor.fetchall()
@@ -438,7 +493,6 @@ def profile():
     conn.close()
 
     return render_template("profile.html", user=user, orders2=orders_with_items)
-
 
 DEBUG_MODE = os.getenv("FLASK_DEBUG", "0") == "1"
 
