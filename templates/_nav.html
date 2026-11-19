@@ -5,8 +5,8 @@
     </form>
 
     <a href="{{ url_for('home') }}"><i class="fa-solid fa-house"></i> Home</a>
-    <a href="{{ url_for('cart') }}"><i class="fa-solid fa-cart-shopping"></i> Cart</a>
-    <a href="{{ url_for('profile') }}"><i class="fa-solid fa-user"></i> Profile</a>
     <a href="{{ url_for('live') }}"><i class="fa-solid fa-video"></i> Video</a>
+    <a href="{{ url_for('cart') }}"><i class="fa-solid fa-cart-shopping"></i> Cart ({{ cart_count }})</a>
+    <a href="{{ url_for('profile') }}"><i class="fa-solid fa-user"></i> Profile</a>
     <a href="{{ url_for('login') }}"><i class="fa-solid fa-right-to-bracket"></i> Login</a>
 </nav>

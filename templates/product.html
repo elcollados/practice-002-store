@@ -26,9 +26,12 @@
                 {% endif %}
 
                 <div class="actions">
-                    <a class="btn btn-outline" href="{{ url_for('home') }}">Back to Home</a>
+                    <a class="btn btn-outline" href="{{ url_for('home') }}">Home</a>
                     {% if product2.stock > 0 %}
-                        <a class="btn" href="{{ url_for('add_to_cart', product2_id=product2.id) }}">Add to Cart</a>
+                    <form method="POST" action="{{ url_for('add_to_cart', product2_id=product2['id'] ) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn">Add to cart</button>
+                    </form>
                     {% else %}
                         <span class="btn disabled">Out of stock</span>
                     {% endif %}

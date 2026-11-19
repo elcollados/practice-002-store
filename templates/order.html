@@ -6,10 +6,15 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 <body>
+   
     {% include "_flash.html" %}
     <header>
         <h1>Order Received</h1>
-        {% include "_nav.html" %}
+        <h2>Order #{{ order_id }}</h2>
+        <nav>
+            <a href="{{ url_for('profile') }}"><i class="fa-solid fa-user"></i> Profile</a>
+            <a href="/logout"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
+        </nav>
     </header>
 
     <main>

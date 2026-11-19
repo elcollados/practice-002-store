@@ -15,6 +15,7 @@
     <main>
         <h2>Your Information</h2>
         <form action="/place-order" method="POST" class="form-box">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <label>Name</label>
             <input type="text" name="name" required>
             <label>Address</label>

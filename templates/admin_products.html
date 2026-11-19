@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>All Orders</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+   
+    <header>
+        <h1>Admin Products</h1>
+        <nav>
+            <a href="{{ url_for('admin_orders') }}"><i class="fa-solid fa-receipt"></i> All Orders</a>
+            <a href="/logout"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
+        </nav>
+    </header>
+    {% include "_flash.html" %}
+    <main>  
+        <h2>Add product</h2>
+        <form method="post" action="{{ url_for('admin_add_product') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="text" name="name" placeholder="Name" required>
+            <input type="number" name="price" placeholder="Price" step="0.01" min="0" required>
+            <input type="number" name="stock" placeholder="Stock" min="0" required>
+            <input type="text" name="image" placeholder="Image file, e.g mouse1.webp" required>
+            <button type="submit" class="btn">Add product</button>
+        </form>
+
+        <h2>Edit products</h2>
+        {% for product in products %}
+            <form method="post" action="{{ url_for('admin_edit_product', product_id=product['id']) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="text" name="name" value="{{ product['name'] }}" required>
+                <input type="number" name="price" value="{{ product['price'] }}" step="0.01" min="0" required>
+                <input type="number" name="stock" value="{{ product['stock'] }}" min="0" required>
+                <input type="text" name="image" value="{{ product['image'] }}" required>
+                <button type="submit" class="btn">Save</button>
+            </form>
+        {% endfor %}
+    </main>
+</body>
+</html>

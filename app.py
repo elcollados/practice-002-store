@@ -5,12 +5,14 @@ import os
 from dotenv import load_dotenv
 import psycopg2
 from psycopg2.extras import DictCursor
+from flask_wtf.csrf import CSRFProtect
 
 
 load_dotenv()
 
 app = Flask(__name__)
 
+csrf = CSRFProtect(app)
 
 SECRET_KEY = os.getenv("SECRET_KEY")
 
@@ -113,6 +115,12 @@ def create_tables():
 
 create_tables()
 
+
+@app.context_processor
+def cart_count():
+    cart = session.get("cart", {})
+    return {"cart_count": sum(cart.values())}
+
 def get_all_products():
     conn = get_db()
     cursor = conn.cursor()
@@ -146,6 +154,10 @@ def register():
         email = request.form["email"].strip().lower()
         password = request.form["password"]
 
+        if len(password) < 4 or len(password) > 15: 
+            flash("Password must be at least 8 to 15 characters")
+            return redirect(url_for("register"))
+
         password_hash = generate_password_hash(password)
 
         conn = get_db()
@@ -160,7 +172,8 @@ def register():
         except (sqlite3.IntegrityError, psycopg2.IntegrityError):
             conn.rollback()
             conn.close()
-            return "Email already registered"
+            flash("Email already registered")
+            return redirect(url_for("register"))
 
         conn.close()
         return redirect(url_for("login"))
@@ -183,8 +196,9 @@ def login():
             session["user_id"] = user["id"]
             session["user_name"] = user["name"]
             return redirect(url_for("profile"))
-        
-        return "Invalid email or password"
+
+        flash("Invalid email or password")
+        return redirect(url_for("login"))
 
     return render_template("login.html")
 
@@ -291,16 +305,39 @@ def place_order():
 
     session.pop("cart", None)
 
-    order2 = {
-        "total": total,
-        "products": cart_products2
-    }
+    return redirect(url_for("order_confirmation", order_id=order_id2))
 
+@app.route("/order/<int:order_id>")
+def order_confirmation(order_id):
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    execute_query(cursor,
+                "SELECT * FROM orders2 WHERE id = ? AND user_id = ? ",
+                (order_id, session["user_id"]))
+    order = cursor.fetchone()
+
+    if not order:
+        conn.close()
+        return "Order not found", 404
+
+    execute_query(cursor, "SELECT * FROM order_items2 WHERE order_id = ?", (order_id,))
+    items = cursor.fetchall()
+    conn.close()
+
+    order2 = {
+        "total": order["total"],
+        "products": items
+    }
 
     return render_template(
         "order.html",
-        name=name,
-        address=address,
+        order_id=order["id"],
+        name=order["name"],
+        address=order["address"],
         order2=order2
     )
 
@@ -356,7 +393,72 @@ def update_status(order2_id):
     conn.commit()
     conn.close()
 
+    flash("Product updated")
     return redirect(url_for("admin_orders"))
+
+@app.route("/admin/products")
+def admin_products():
+    if not admin_required():
+        return redirect(url_for("login"))
+
+    return render_template("admin_products.html", products=get_all_products())
+
+@app.route("/admin/products/<int:product_id>/edit", methods=["POST"])
+def admin_edit_product(product_id):
+    if not admin_required():
+        return redirect(url_for("login"))
+
+    name = request.form["name"].strip()
+    price = float(request.form["price"])
+    stock = int(request.form["stock"])
+    image = request.form["image"].strip()
+
+    if not name or not image or price < 0 or stock < 0:
+        flash("Invalid values")
+        return redirect(url_for("admin_products"))
+
+    conn = get_db()
+    cursor = conn.cursor()
+    execute_query(cursor, 
+                "UPDATE products2 SET name = ?, price = ?, stock = ?, image = ? WHERE id = ?",
+                (name, price, stock, image, product_id))
+    conn.commit()
+    conn.close()
+
+    flash("Product updated")
+    return redirect(url_for("admin_products"))
+
+@app.route("/admin/products/add", methods=["POST"])
+def admin_add_product():
+    if not admin_required():
+        return redirect(url_for("login"))
+
+    name = request.form["name"].strip()
+    price = float(request.form["price"])
+    stock = int(request.form["stock"])
+    image = request.form["image"].strip()
+
+    if not name or not image or price < 0 or stock < 0:
+        flash("Invalid values")
+        return redirect(url_for("admin_products"))
+
+
+    conn = get_db()
+    cursor = conn.cursor()
+    execute_query(cursor, "SELECT COALESCE(MAX(id), -1) + 1 AS next_id FROM products2", ())
+    next_id = cursor.fetchone()["next_id"]
+
+
+
+    execute_query(cursor,
+                "INSERT INTO products2 (id, name, price, stock, image) VALUES (?, ?, ?, ?, ?)",
+                (next_id, name, price, stock, image))
+    conn.commit()
+    conn.close()
+
+    flash("Product added")
+    return redirect(url_for("admin_products"))
+    
 
 @app.route("/checkout")
 def checkout():

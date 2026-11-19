@@ -22,11 +22,13 @@
 
                 <div class="qty-row">
                     <form method="POST" action="{{ url_for('decrease_quantity', product2_id=product2['id']) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <button type="submit" class="btn">-</button>
                     </form>
                     <span>{{ product2.quantity }}</span>
                     {% if product2.quantity < product2.stock %}
                         <form method="POST" action="{{ url_for('increase_quantity', product2_id=product2['id']) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <button type="submit" class="btn">+</button>
                         </form>
                     {% else %}
@@ -35,6 +37,7 @@
                 </div>
 
                 <form method="POST" action="{{ url_for('remove_cart', product2_id=product2.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit" class="btn">Remove</button>
                 </form>
             </div>

@@ -7,19 +7,12 @@
 </head>
 
 <body>
-
-    {% with messages = get_flashed_messages() %}
-        {% for message in messages %}
-            <p class="flash">{{ message }}</p>
-        {% endfor %}
-    {% endwith %}
-
-
+    
     <header>
         <h1>Home</h1>
         {% include "_nav.html" %}
     </header>
-
+    {% include "_flash.html" %}
 <main>
     <section class="products">
         {% for product2 in products2 %}
@@ -41,6 +34,7 @@
             
                 {% if product2.stock > 0 %}
                     <form method="POST" action="{{ url_for('add_to_cart', product2_id=product2['id'] ) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <button type="submit" class="btn">Add to cart</button>
                     </form>
                 {% else %}

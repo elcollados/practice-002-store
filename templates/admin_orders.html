@@ -6,15 +6,16 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 <body>
-    {% include "_flash.html" %}
     <header>
         <h1>Admin</h1>
         <nav>
+            <a href="{{ url_for('admin_products') }}"><i class="fa-solid fa-box"></i> Admin products</a>
             <a href="/logout"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
         </nav>
     </header>
-
+    {% include "_flash.html" %}
     <main>
+        
         <h2>All Orders</h2>
         <section class="products">
             {% for order2 in orders2 %}
@@ -25,6 +26,7 @@
                 <p>Status: {{ order2.status }}</p>
 
                 <form action="{{ url_for('update_status', order2_id=order2.id) }}" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <select name="status">
                         <option value="Pending" {% if order2.status == "Pending" %}selected{% endif %}>Pending</option>
                         <option value="Shipped" {% if order2.status == "Shipped" %}selected{% endif %}>Shipped</option>
