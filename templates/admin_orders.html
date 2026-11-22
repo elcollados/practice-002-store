@@ -7,8 +7,9 @@
 </head>
 <body>
     <header>
-        <h1>Admin</h1>
+        <h1>All Orders</h1>
         <nav>
+            <a href="{{ url_for('admin_dashboard') }}" title="Admin"><i class="fa-solid fa-user-shield"></i> Admin </a>
             <a href="{{ url_for('admin_products') }}"><i class="fa-solid fa-box"></i> Admin products</a>
             <a href="/logout"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
         </nav>

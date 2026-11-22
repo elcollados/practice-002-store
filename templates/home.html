@@ -10,6 +10,10 @@
     
     <header>
         <h1>Home</h1>
+        <form action="{{ url_for('search') }}" method="GET" class="search-form">
+            <input class="search" type="search" name="search" placeholder="Search products" aria-label="Search products" required>
+            <button type="submit" aria-label="Search" class="btn"><i class="fa-solid fa-magnifying-glass"></i></button>
+        </form>
         {% include "_nav.html" %}
     </header>
     {% include "_flash.html" %}

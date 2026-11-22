@@ -119,7 +119,9 @@ create_tables()
 @app.context_processor
 def cart_count():
     cart = session.get("cart", {})
-    return {"cart_count": sum(cart.values())}
+    return {"cart_count": sum(cart.values()), 
+            "is_admin": admin_required()
+    }
 
 def get_all_products():
     conn = get_db()
@@ -341,6 +343,13 @@ def order_confirmation(order_id):
         order2=order2
     )
 
+@app.route("/admin")
+def admin_dashboard():
+    if not admin_required():
+        return redirect(url_for("login"))
+
+    return render_template("admin_dashboard.html")
+
 @app.route("/admin/orders") 
 def admin_orders():
     if not admin_required():
@@ -458,7 +467,20 @@ def admin_add_product():
 
     flash("Product added")
     return redirect(url_for("admin_products"))
-    
+
+@app.route("/admin/products/<int:product_id>/delete", methods=["POST"])
+def admin_delete_product(product_id):
+    if not admin_required():
+        return redirect(url_for("login"))
+
+    conn = get_db()
+    cursor = conn.cursor()
+    execute_query(cursor, "DELETE FROM products2 WHERE id = ?", (product_id,))
+    conn.commit()
+    conn.close()
+
+    flash("Product deleted")
+    return redirect(url_for("admin_products"))
 
 @app.route("/checkout")
 def checkout():

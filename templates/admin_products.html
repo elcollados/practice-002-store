@@ -8,8 +8,9 @@
 <body>
    
     <header>
-        <h1>Admin Products</h1>
+        <h1>Products</h1>
         <nav>
+            <a href="{{ url_for('admin_dashboard') }}" title="Admin"><i class="fa-solid fa-user-shield"></i> Admin </a>
             <a href="{{ url_for('admin_orders') }}"><i class="fa-solid fa-receipt"></i> All Orders</a>
             <a href="/logout"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
         </nav>
@@ -35,6 +36,12 @@
                 <input type="number" name="stock" value="{{ product['stock'] }}" min="0" required>
                 <input type="text" name="image" value="{{ product['image'] }}" required>
                 <button type="submit" class="btn">Save</button>
+            </form>
+
+            <form method="post" action="{{ url_for('admin_delete_product', product_id=product['id']) }}"
+                onsubmit="return confirm('Delete this product?');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="delbtn">Delete</button>
             </form>
         {% endfor %}
     </main>

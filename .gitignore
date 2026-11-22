@@ -3,3 +3,4 @@ __pycache__
 store.db
 .env
 make_admin.py
+.vscode

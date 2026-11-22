@@ -9,6 +9,10 @@
     {% include "_flash.html" %}
     <header>
         <h1>Videos</h1>
+        <form action="{{ url_for('search') }}" method="GET" class="search-form">
+            <input class="search" type="search" name="search" placeholder="Search products..." aria-label="Search products" required>
+            <button type="submit" aria-label="Search" class="btn"><i class="fa-solid fa-magnifying-glass"></i></button>
+        </form>
         {% include "_nav.html" %}
     </header>
 
@@ -18,7 +22,7 @@
                 <source src="{{ url_for('static', filename='video/green.mp4') }}" type="video/mp4">
             </video>
             <br><br>
-            <a class="btn" href="/product/0">View Product</a>
+            <a class="btn" href="{{ url_for('product_detail', product2_id=1) }}">View Product</a>
         </div>
     </main>
 </body>

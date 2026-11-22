@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head> 
+    <title>Home</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css' ) }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+    
+<main>
+    <br>
+    <h1>Admin Dashboard</h1><br>
+    <a class="btn" href="{{ url_for('admin_products') }}">Products</a>
+    <a class="btn" href="{{ url_for('admin_orders') }}">Orders</a>
+
+    
+    <a class="btn" href="{{ url_for('home') }}"><i class="fa-solid fa-house"></i> Home</a>
+    <a class="btn" href="{{ url_for('live') }}"><i class="fa-solid fa-video"></i> Video</a>
+    <a class="btn" href="{{ url_for('cart') }}"><i class="fa-solid fa-cart-shopping"></i> Cart ({{ cart_count }})</a>
+    <a class="btn" href="{{ url_for('profile') }}"><i class="fa-solid fa-user"></i> Profile</a>
+    <a class="btn" href="{{ url_for('login') }}"><i class="fa-solid fa-right-to-bracket"></i> Login</a>
+
+
+</main>
+
+</body>
+</html>

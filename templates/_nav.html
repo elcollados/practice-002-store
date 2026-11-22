@@ -1,12 +1,12 @@
 <nav>
-    <form action="{{ url_for('search') }}" method="GET" class="search-form">
-        <input class="search" type="search" name="search" placeholder="Search products..." aria-label="Search products" required>
-        <button type="submit" aria-label="Search"><i class="fa-solid fa-magnifying-glass"></i></button>
-    </form>
-
+    {% if is_admin %}
+        <a href="{{ url_for('admin_dashboard') }}" title="Admin"><i class="fa-solid fa-user-shield"></i> Admin</a>
+    {% endif %}
     <a href="{{ url_for('home') }}"><i class="fa-solid fa-house"></i> Home</a>
     <a href="{{ url_for('live') }}"><i class="fa-solid fa-video"></i> Video</a>
     <a href="{{ url_for('cart') }}"><i class="fa-solid fa-cart-shopping"></i> Cart ({{ cart_count }})</a>
     <a href="{{ url_for('profile') }}"><i class="fa-solid fa-user"></i> Profile</a>
-    <a href="{{ url_for('login') }}"><i class="fa-solid fa-right-to-bracket"></i> Login</a>
+    {% if session.get('user_id') %}
+        <a href="{{ url_for('logout') }}" class="logout-link"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
+    {% endif %}
 </nav>
