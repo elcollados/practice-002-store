@@ -25,6 +25,13 @@
                 <p>Status: {{ order2.status }}</p>
                 <p class="price">Total: ${{ order2.total }}</p>
                 {% include "_order_items.html" with context %}
+                {% if order2.status == 'Pending' %}
+                    <form method="post" action="{{ url_for('cancel_order', order_id=order2['id']) }}"
+                        onsubmit="return confirm('Cancel this order?');">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn">Cancel order</button>
+                    </form>
+                {% endif %}
             </div>
             {% endfor %}
         </section>

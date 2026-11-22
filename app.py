@@ -367,6 +367,41 @@ def order_confirmation(order_id):
         order2=order2
     )
 
+@app.route("/cancel-order/<int:order_id>", methods=["POST"])
+def cancel_order(order_id):
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    try:
+        execute_query(cursor,
+            "UPDATE orders2 SET status = 'Cancelled' WHERE id = ? AND user_id = ? AND status = 'Pending'",
+            (order_id, session["user_id"]))
+        if cursor.rowcount == 0:
+            conn.rollback()
+            flash("This order cannot be cancelled")
+            return redirect(url_for("profile"))
+        
+        execute_query(cursor, "SELECT name, quantity FROM order_items2 WHERE order_id = ?", (order_id,))
+        items = cursor.fetchall()
+
+        for item in items:
+            execute_query(cursor,
+                        "UPDATE products2 SET stock = stock + ? WHERE name = ?",
+                        (item["quantity"], item["name"]))
+
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
+
+    flash("Order cancelled")
+    return redirect(url_for("profile"))
+
 @app.route("/admin")
 def admin_dashboard():
     if not admin_required():
@@ -421,6 +456,10 @@ def update_status(order2_id):
     cursor = conn.cursor()
     execute_query(cursor,"SELECT status FROM orders2 WHERE id = ?", (order2_id,))
     row = cursor.fetchone()
+
+    if row and row["status"] == "Cancelled":
+        conn.close()
+        return redirect(url_for("admin_orders"))
 
     steps = ["Pending", "Shipped", "Delivered"]
     if row and steps.index(new_status) < steps.index(row["status"]):
