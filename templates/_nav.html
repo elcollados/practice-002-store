@@ -1,4 +1,10 @@
+
 <nav>
+    {% if is_demo %}
+        Demo account (read-only).
+        Admin page: <a href="{{ url_for('admin_dashboard') }}"><i class="fa-solid fa-user-shield"></i> {{ url_for('admin_dashboard') }}</a>
+    {% endif %}
+
     {% if is_admin %}
         <a href="{{ url_for('admin_dashboard') }}" title="Admin"><i class="fa-solid fa-user-shield"></i> Admin</a>
     {% endif %}

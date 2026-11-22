@@ -2,5 +2,8 @@
 __pycache__
 store.db
 .env
+check_admin.py
+make_admin_local.py
 make_admin.py
 .vscode
+TODO.md

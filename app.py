@@ -6,13 +6,20 @@ from dotenv import load_dotenv
 import psycopg2
 from psycopg2.extras import DictCursor
 from flask_wtf.csrf import CSRFProtect
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 
 load_dotenv()
 
 app = Flask(__name__)
 
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1)
+
 csrf = CSRFProtect(app)
+
+limiter = Limiter(get_remote_address, app=app, default_limits=[])
 
 SECRET_KEY = os.getenv("SECRET_KEY")
 
@@ -119,9 +126,12 @@ create_tables()
 @app.context_processor
 def cart_count():
     cart = session.get("cart", {})
-    return {"cart_count": sum(cart.values()), 
-            "is_admin": admin_required()
+    return {
+        "cart_count": sum(cart.values()), 
+        "is_admin": admin_required(),
+        "is_demo": is_demo()
     }
+
 
 def get_all_products():
     conn = get_db()
@@ -149,6 +159,12 @@ def admin_required():
     conn.close()
     return user and user["is_admin"] == 1
 
+DEMO_EMAIL = "demo@example.com"
+
+def is_demo():
+    return session.get("user_email") == DEMO_EMAIL
+
+
 @app.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "POST":
@@ -157,7 +173,7 @@ def register():
         password = request.form["password"]
 
         if len(password) < 4 or len(password) > 15: 
-            flash("Password must be at least 8 to 15 characters")
+            flash("Password must be at least 4 to 15 characters")
             return redirect(url_for("register"))
 
         password_hash = generate_password_hash(password)
@@ -182,7 +198,13 @@ def register():
 
     return render_template("register.html")
 
+@app.errorhandler(429)
+def too_many_requests(e):
+    flash("Too many attempts. Please wait a minute and try again.")
+    return redirect(url_for("login"))
+
 @app.route("/login", methods=["GET", "POST"])
+@limiter.limit("5 per minute", methods=["POST"])
 def login():
     if request.method == "POST":
         email = request.form["email"].strip().lower()
@@ -197,6 +219,7 @@ def login():
         if user and check_password_hash(user["password_hash"], password):
             session["user_id"] = user["id"]
             session["user_name"] = user["name"]
+            session["user_email"] = user["email"]
             return redirect(url_for("profile"))
 
         flash("Invalid email or password")
@@ -208,6 +231,7 @@ def login():
 def logout():
     session.pop("user_id", None)
     session.pop("user_name", None)
+    session.pop("user_email", None)
     return redirect(url_for("home"))
 
 @app.route("/")
@@ -367,11 +391,12 @@ def admin_orders():
         items2 = cursor.fetchall()
         orders_with_items.append({
             "id": order2["id"],
-            "name": order2["name"],
-            "address": order2["address"],
+            "name": "Hidden (demo)" if is_demo() else order2["name"],
+            "address": "Hidden (demo)" if is_demo() else order2["address"],
             "total": order2["total"],
             "status": order2["status"],
             "products": items2
+
         })
 
     conn.close()
@@ -380,6 +405,10 @@ def admin_orders():
 
 @app.route("/admin/update-status/<int:order2_id>", methods=["POST"])
 def update_status(order2_id):
+    if is_demo():
+        flash("Demo account is read-only")
+        return redirect(url_for("admin_orders"))
+
     if not admin_required():
         return redirect(url_for("login"))
 
@@ -402,7 +431,7 @@ def update_status(order2_id):
     conn.commit()
     conn.close()
 
-    flash("Product updated")
+    flash("Order status updated")
     return redirect(url_for("admin_orders"))
 
 @app.route("/admin/products")
@@ -414,6 +443,10 @@ def admin_products():
 
 @app.route("/admin/products/<int:product_id>/edit", methods=["POST"])
 def admin_edit_product(product_id):
+    if is_demo():
+        flash("Demo account is read-only")
+        return redirect(url_for("admin_products"))
+
     if not admin_required():
         return redirect(url_for("login"))
 
@@ -439,6 +472,10 @@ def admin_edit_product(product_id):
 
 @app.route("/admin/products/add", methods=["POST"])
 def admin_add_product():
+    if is_demo():
+        flash("Demo account is read-only")
+        return redirect(url_for("admin_products"))
+
     if not admin_required():
         return redirect(url_for("login"))
 
@@ -470,6 +507,10 @@ def admin_add_product():
 
 @app.route("/admin/products/<int:product_id>/delete", methods=["POST"])
 def admin_delete_product(product_id):
+    if is_demo():
+        flash("Demo account is read-only")
+        return redirect(url_for("admin_products"))
+
     if not admin_required():
         return redirect(url_for("login"))
 
