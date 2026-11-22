@@ -150,7 +150,7 @@ def cart_count():
     cart = session.get("cart", {})
     return {
         "cart_count": sum(cart.values()), 
-        "is_admin": admin_required(),
+        "is_admin": session.get("is_admin", False),
         "is_demo": is_demo()
     }
 
@@ -247,6 +247,7 @@ def login():
             session["user_id"] = user["id"]
             session["user_name"] = user["name"]
             session["user_email"] = user["email"]
+            session["is_admin"] = user["is_admin"] == 1
             return redirect(url_for("profile"))
 
         flash("Invalid email or password")
@@ -259,6 +260,7 @@ def logout():
     session.pop("user_id", None)
     session.pop("user_name", None)
     session.pop("user_email", None)
+    session.pop("is_admin", None)
     return redirect(url_for("home"))
 
 @app.route("/")
