@@ -17,23 +17,24 @@
     {% include "_flash.html" %}
     <main>  
         <h2>Add product</h2>
-        <form method="post" action="{{ url_for('admin_add_product') }}">
+        <form method="post" enctype="multipart/form-data" action="{{ url_for('admin_add_product') }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <input type="text" name="name" placeholder="Name" required>
             <input type="number" name="price" placeholder="Price" step="0.01" min="0" required>
             <input type="number" name="stock" placeholder="Stock" min="0" required>
-            <input type="text" name="image" placeholder="Image file, e.g mouse1.webp" required>
+            <input type="file" name="image_file" accept="image/*" required>
             <button type="submit" class="btn">Add product</button>
         </form>
 
         <h2>Edit products</h2>
         {% for product in products %}
-            <form method="post" action="{{ url_for('admin_edit_product', product_id=product['id']) }}">
+            <form method="post" enctype="multipart/form-data" action="{{ url_for('admin_edit_product', product_id=product['id']) }}">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <input type="text" name="name" value="{{ product['name'] }}" required>
                 <input type="number" name="price" value="{{ product['price'] }}" step="0.01" min="0" required>
                 <input type="number" name="stock" value="{{ product['stock'] }}" min="0" required>
                 <input type="text" name="image" value="{{ product['image'] }}" required>
+                <input type="file" name="image_file" accept="image/*">
                 <button type="submit" class="btn">Save</button>
             </form>
 

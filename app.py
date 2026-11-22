@@ -9,6 +9,8 @@ from flask_wtf.csrf import CSRFProtect
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from werkzeug.middleware.proxy_fix import ProxyFix
+import uuid
+from werkzeug.utils import secure_filename
 
 
 load_dotenv()
@@ -27,6 +29,26 @@ if not SECRET_KEY:
     raise RuntimeError("SECRET_KEY environment variable is not set.")
 
 app.secret_key = SECRET_KEY
+
+UPLOAD_FOLDER = os.path.join(app.root_path, "static", "image")
+ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "webp", "gif", "jfif"}
+app.config["MAX_CONTENT_LENGTH"] = 2 * 1024 * 1024 
+
+def save_image(file):
+    if not file or file.filename == "":
+        return None
+
+    filename = secure_filename(file.filename)
+    if "." not in filename:
+        return None
+
+    extension = filename.rsplit(".", 1)[1].lower()
+    if extension not in ALLOWED_EXTENSIONS:
+        return None
+
+    filename = uuid.uuid4().hex[:8] + "_" +filename
+    file.save(os.path.join(UPLOAD_FOLDER, filename))
+    return filename
 
 starting_products = [
     {"id": 0, "name": "Monitor", "price": 1, "stock": 0, "image": "monitor1.jfif"},
@@ -202,6 +224,11 @@ def register():
 def too_many_requests(e):
     flash("Too many attempts. Please wait a minute and try again.")
     return redirect(url_for("login"))
+
+@app.errorhandler(413)
+def file_too_large(e):
+    flash("Image is too big. Maximum is 2MB.")
+    return redirect(url_for("admin_products"))
 
 @app.route("/login", methods=["GET", "POST"])
 @limiter.limit("5 per minute", methods=["POST"])
@@ -492,7 +519,8 @@ def admin_edit_product(product_id):
     name = request.form["name"].strip()
     price = float(request.form["price"])
     stock = int(request.form["stock"])
-    image = request.form["image"].strip()
+    new_image = save_image(request.files.get("image_file"))
+    image = new_image or request.form["image"].strip()
 
     if not name or not image or price < 0 or stock < 0:
         flash("Invalid values")
@@ -521,7 +549,7 @@ def admin_add_product():
     name = request.form["name"].strip()
     price = float(request.form["price"])
     stock = int(request.form["stock"])
-    image = request.form["image"].strip()
+    image = save_image(request.files.get("image_file"))
 
     if not name or not image or price < 0 or stock < 0:
         flash("Invalid values")
