@@ -156,16 +156,6 @@ def create_tables():
 
 create_tables()
 
-conn = get_db()
-cursor = conn.cursor()
-try:
-    execute_query(cursor, "ALTER TABLE order_items2 ADD COLUMN product_id INTEGER", ())
-    conn.commit()
-except Exception:
-    conn.rollback()
-conn.close()
-
-
 @app.context_processor
 def cart_count():
     cart = get_cart()
