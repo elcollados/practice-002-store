@@ -26,6 +26,7 @@
                 <p>Shipped to: {{ order2.address }}</p>
                 <p>Status: {{ order2.status }}</p>
 
+                {% if order2.status != 'Cancelled' %}
                 <form action="{{ url_for('update_status', order2_id=order2.id) }}" method="POST">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <select name="status">
@@ -36,7 +37,7 @@
                     <br>
                     <button class="btn" type="submit">Update</button>
                 </form>
-
+                {% endif %}
                 <p class="price">Total: ${{ order2.total }}</p>
                 {% include "_order_items.html" with context %}
             </div>

@@ -133,6 +133,17 @@ def create_tables():
         )
     """, ())
 
+    execute_query(cursor, f"""
+        CREATE TABLE IF NOT EXISTS cart_items2 (
+        {id_column},
+        user_id INTEGER NOT NULL,
+        product_id INTEGER NOT NULL,
+        quantity INTEGER NOT NULL,
+        UNIQUE (user_id, product_id)
+        )
+    """, ())
+    
+
     execute_query(cursor, "SELECT COUNT(*) AS total FROM products2", ())
     if cursor.fetchone()["total"] == 0:
         for p in starting_products:
@@ -147,7 +158,7 @@ create_tables()
 
 @app.context_processor
 def cart_count():
-    cart = session.get("cart", {})
+    cart = get_cart()
     return {
         "cart_count": sum(cart.values()), 
         "is_admin": session.get("is_admin", False),
@@ -170,6 +181,34 @@ def get_product(product_id):
     product = cursor.fetchone()
     conn.close()
     return product
+
+def get_cart():
+    if "user_id" not in session:
+        return session.get("cart", {})
+
+    conn = get_db()
+    cursor = conn.cursor()
+    execute_query(cursor,
+                  "SELECT product_id, quantity FROM cart_items2 WHERE user_id = ?",
+                  (session["user_id"],))
+    rows = cursor.fetchall()
+    conn.close()
+    return {str(row["product_id"]): row["quantity"] for row in rows}
+
+def save_cart(cart):
+    if "user_id" not in session:
+        session["cart"] = cart
+        return
+
+    conn = get_db()
+    cursor = conn.cursor()
+    execute_query(cursor, "DELETE FROM cart_items2 WHERE user_id = ?", (session["user_id"],))
+    for key, qty in cart.items():
+        execute_query(cursor,
+                      "INSERT INTO cart_items2 (user_id, product_id, quantity) VALUES (?, ?, ?)",
+                      (session["user_id"], int(key), qty))
+    conn.commit()
+    conn.close()
 
 def admin_required():
     if "user_id" not in session:
@@ -297,7 +336,7 @@ def place_order():
     name = request.form["name"]
     address = request.form["address"]
 
-    cart_data2 = session.get("cart", {})
+    cart_data2 = get_cart()
     user_id2 = session.get("user_id")
 
     if not cart_data2:
@@ -358,7 +397,7 @@ def place_order():
     finally:
         conn.close()
 
-    session.pop("cart", None)
+    save_cart({})
 
     return redirect(url_for("order_confirmation", order_id=order_id2))
 
@@ -597,7 +636,7 @@ def checkout():
     if "user_id" not in session:
         return redirect(url_for("login"))
     
-    cart_data = session.get("cart", {})
+    cart_data = get_cart()
 
     if not cart_data:   
         return redirect(url_for("cart"))
@@ -606,7 +645,7 @@ def checkout():
 
 @app.route("/add-to-cart/<int:product2_id>", methods=["POST"])
 def add_to_cart(product2_id):
-    cart = session.get("cart", {})
+    cart = get_cart()
     key  = str(product2_id)
 
     product2 = get_product(product2_id)
@@ -620,12 +659,12 @@ def add_to_cart(product2_id):
         return redirect(request.referrer or url_for("home"))
 
     cart[key] = current_qty + 1
-    session["cart"] = cart
+    save_cart(cart)
     return redirect(request.referrer or url_for("cart"))
 
 @app.route("/increase-quantity/<int:product2_id>", methods=["POST"])
 def increase_quantity(product2_id):
-    cart = session.get("cart", {})
+    cart = get_cart()
     key = str(product2_id)
 
     product2 = get_product(product2_id)
@@ -639,12 +678,12 @@ def increase_quantity(product2_id):
         return redirect(request.referrer or url_for("cart"))
         
     cart[key] = current_qty + 1
-    session["cart"] = cart
+    save_cart(cart)
     return redirect(url_for("cart"))
 
 @app.route("/decrease-quantity/<int:product2_id>", methods=["POST"])
 def decrease_quantity(product2_id):
-    cart = session.get("cart", {})
+    cart = get_cart()
     key = str(product2_id)
 
     if key in cart:
@@ -652,24 +691,24 @@ def decrease_quantity(product2_id):
         if cart[key] <=0:
             del cart[key]
 
-    session["cart"] = cart
+    save_cart(cart)
     return redirect(url_for("cart"))
 
 @app.route("/remove-cart/<int:product2_id>", methods=["POST"])
 def remove_cart(product2_id):
-    cart = session.get("cart", {})
+    cart = get_cart()
     key = str(product2_id)
 
     if key in cart:
         del cart[key]
 
-    session["cart"] = cart
+    save_cart(cart)
     return redirect(url_for("cart"))
 
 
 @app.route("/cart")
 def cart():
-    cart_data2 = session.get("cart", {})
+    cart_data2 = get_cart()
 
     cart_products2 = []
     for product2 in get_all_products():
