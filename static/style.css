@@ -47,16 +47,16 @@ nav a {
     font-size: 16px;
 }
 
-nav a:hover {
-    color: var(--accent);
-}
-
 nav button {
     background-color: var(--card);
-    color: var(--text);
-    padding: 8px 12px;
-    border-radius: 8px;
+    color: gainsboro;
+    padding: none;
     font-size: 16px;
+    border: none;
+}
+
+nav a:hover, nav button:hover {
+    color: var(--accent);
 }
 
 input {

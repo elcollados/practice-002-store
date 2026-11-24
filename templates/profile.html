@@ -23,7 +23,7 @@
                 <h2>Order #{{ order2.id }}</h2>
                 <p>Shipped to: {{ order2.address }}</p>
                 <p>Status: {{ order2.status }}</p>
-                <p class="price">Total: ${{ order2.total }}</p>
+                <p class="price">Total: ${{ order2.total|money }}</p>
                 {% include "_order_items.html" with context %}
                 {% if order2.status == 'Pending' %}
                     <form method="post" action="{{ url_for('cancel_order', order_id=order2['id']) }}"

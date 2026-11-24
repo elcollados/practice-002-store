@@ -15,9 +15,13 @@
     <main>
         <section class="products">
             <div class="product">
-                <img src="{{ url_for('static', filename='image/' + product2.image) }}" alt="{{ product2.name }}">
+                {% if product2.image.startswith('https') %}
+                    <img src="{{ product2.image }}">
+                {% else %}
+                    <img src="{{ url_for('static', filename='image/' + product2.image) }}" alt="{{ product2.name }}">
+                {% endif %}
                 <p class="name">{{ product2.name }}</p>
-                <p class="price">${{ product2.price }}</p>
+                <p class="price">${{ product2.price|money }}</p>
 
                 {% if product2.stock > 0 %}
                     <p class="stock">In stock: {{ product2.stock }}</p>

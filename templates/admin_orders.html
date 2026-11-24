@@ -11,7 +11,12 @@
         <nav>
             <a href="{{ url_for('admin_dashboard') }}" title="Admin"><i class="fa-solid fa-user-shield"></i> Admin </a>
             <a href="{{ url_for('admin_products') }}"><i class="fa-solid fa-box"></i> Admin products</a>
-            <a href="/logout"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
+        {% if session.get('user_id') %}
+        <form method="post" action="{{ url_for('logout') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="logout"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
+        </form>
+        {% endif %}
         </nav>
     </header>
     {% include "_flash.html" %}
@@ -38,7 +43,7 @@
                     <button class="btn" type="submit">Update</button>
                 </form>
                 {% endif %}
-                <p class="price">Total: ${{ order2.total }}</p>
+                <p class="price">Total: ${{ order2.total|money }}</p>
                 {% include "_order_items.html" with context %}
             </div>
             {% endfor %}

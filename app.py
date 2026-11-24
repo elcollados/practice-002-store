@@ -15,6 +15,8 @@ from werkzeug.utils import secure_filename
 
 load_dotenv()
 
+DEBUG_MODE = os.getenv("FLASK_DEBUG", "0") == "1"
+
 app = Flask(__name__)
 
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1)
@@ -29,6 +31,10 @@ if not SECRET_KEY:
     raise RuntimeError("SECRET_KEY environment variable is not set.")
 
 app.secret_key = SECRET_KEY
+
+app.config["SESSION_COOKIE_SECURE"] = not DEBUG_MODE
+app.config["SESSION_COOKIE_HTTPONLY"] = True
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 
 UPLOAD_FOLDER = os.path.join(app.root_path, "static", "image")
 ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "webp", "gif", "jfif"}
@@ -50,18 +56,29 @@ def save_image(file):
     file.save(os.path.join(UPLOAD_FOLDER, filename))
     return filename
 
+def read_product_form():
+    try:
+        name = request.form["name"].strip()
+        price = round(float(request.form["price"]) * 100)
+        stock = int(request.form["stock"])
+    except (ValueError, KeyError):
+        return None
+    if not name or price < 0 or stock < 0:
+        return None
+    return name, price, stock
+
 starting_products = [
-    {"id": 0, "name": "Monitor", "price": 1, "stock": 0, "image": "monitor1.jfif"},
-    {"id": 1, "name": "Keyboard", "price": 100, "stock": 10, "image": "keyboard1.jfif"},
-    {"id": 2, "name": "Mouse", "price": 200, "stock": 22, "image": "mouse1.webp"},
-    {"id": 3, "name": "Motherboard-H110M", "price": 300, "stock": 33, "image": "H110M1.jpg"},
-    {"id": 4, "name": "SSD", "price": 400, "stock": 44, "image": "SSD1.webp"},
-    {"id": 5, "name": "Power Supply", "price": 500, "stock": 55, "image": "PSU1.webp"},
-    {"id": 6, "name": "PC case", "price": 600, "stock": 66, "image": "pccase1.jpg"},
-    {"id": 7, "name": "GPU-GTX1050", "price": 700, "stock": 77, "image": "GTX10501.jfif"},
-    {"id": 8, "name": "CPU-G4560", "price": 800, "stock": 88, "image": "G45601.jfif"},
-    {"id": 9, "name": "4GB RAM", "price": 900, "stock": 99, "image": "4GBRAM1.jfif"},
-    {"id": 10, "name": "CPU Cooler", "price": 1000, "stock": 100, "image": "cpucooler1.webp"}
+    {"id": 0, "name": "Monitor", "price": 100, "stock": 0, "image": "monitor1.jfif"},
+    {"id": 1, "name": "Keyboard", "price": 10000, "stock": 10, "image": "keyboard1.jfif"},
+    {"id": 2, "name": "Mouse", "price": 20000, "stock": 22, "image": "mouse1.webp"},
+    {"id": 3, "name": "Motherboard-H110M", "price": 30000, "stock": 33, "image": "H110M1.jpg"},
+    {"id": 4, "name": "SSD", "price": 40000, "stock": 44, "image": "SSD1.webp"},
+    {"id": 5, "name": "Power Supply", "price": 50000, "stock": 55, "image": "PSU1.webp"},
+    {"id": 6, "name": "PC case", "price": 60000, "stock": 66, "image": "pccase1.jpg"},
+    {"id": 7, "name": "GPU-GTX1050", "price": 70000, "stock": 77, "image": "GTX10501.jfif"},
+    {"id": 8, "name": "CPU-G4560", "price": 80000, "stock": 88, "image": "G45601.jfif"},
+    {"id": 9, "name": "4GB RAM", "price": 90000, "stock": 99, "image": "4GBRAM1.jfif"},
+    {"id": 10, "name": "CPU Cooler", "price": 100000, "stock": 100, "image": "cpucooler1.webp"}
 ]
 
 def get_db():
@@ -107,7 +124,7 @@ def create_tables():
             user_id INTEGER,
             name TEXT NOT NULL,
             address TEXT NOT NULL,
-            total REAL NOT NULL,
+            total INTEGER NOT NULL,
             status TEXT DEFAULT 'Pending'
         )
     """,())
@@ -118,9 +135,9 @@ def create_tables():
             order_id INTEGER NOT NULL,
             product_id INTEGER,
             name TEXT NOT NULL,
-            price REAL NOT NULL,
+            price INTEGER NOT NULL,
             quantity INTEGER NOT NULL,
-            subtotal REAL NOT NULL
+            subtotal INTEGER NOT NULL
         )
     """,())
 
@@ -128,7 +145,7 @@ def create_tables():
         CREATE TABLE IF NOT EXISTS products2 (
             id INTEGER PRIMARY KEY,
             name TEXT NOT NULL,
-            price REAL NOT NULL,
+            price INTEGER NOT NULL,
             stock INTEGER NOT NULL,
             image TEXT NOT NULL
         )
@@ -159,12 +176,16 @@ create_tables()
 @app.context_processor
 def cart_count():
     cart = get_cart()
+    existing_ids = {str(p["id"]) for p in get_all_products()}
     return {
-        "cart_count": sum(cart.values()), 
+        "cart_count": sum(qty for key, qty in cart.items() if key in existing_ids), 
         "is_admin": session.get("is_admin", False),
         "is_demo": is_demo()
     }
 
+@app.template_filter("money")
+def money(cents):
+    return "{:,.2f}".format(cents / 100)
 
 def get_all_products():
     conn = get_db()
@@ -229,14 +250,18 @@ def is_demo():
 @app.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "POST":
-        name = request.form["name"]
+        name = request.form["name"].strip()
         email = request.form["email"].strip().lower()
         password = request.form["password"]
 
-        if len(password) < 4 or len(password) > 15: 
-            flash("Password must be at least 4 to 15 characters")
+        if not name or not email: 
+            flash("Name and email are required")
             return redirect(url_for("register"))
-
+        
+        if len(password) < 4 or len(password) > 15:
+            flash("password between 4 to 15 only")
+            return redirect(url_for("register"))
+        
         password_hash = generate_password_hash(password)
 
         conn = get_db()
@@ -294,7 +319,7 @@ def login():
 
     return render_template("login.html")
 
-@app.route("/logout")
+@app.route("/logout", methods=["POST"])
 def logout():
     session.pop("user_id", None)
     session.pop("user_name", None)
@@ -333,8 +358,12 @@ def place_order():
     if "user_id" not in session:
         return redirect(url_for("login"))
     
-    name = request.form["name"]
-    address = request.form["address"]
+    name = request.form["name"].strip()
+    address = request.form["address"].strip()
+
+    if not name or not address:
+        flash("Name and address are required")
+        return redirect(url_for("checkout"))
 
     cart_data2 = get_cart()
     user_id2 = session.get("user_id")
@@ -356,6 +385,7 @@ def place_order():
             quantity2 = cart_data2[key]
             subtotal2 = product2["price"] * quantity2
             cart_products2.append({
+                "id": product2["id"],
                 "name": product2["name"],
                 "price": product2["price"],
                 "quantity": quantity2,
@@ -378,8 +408,8 @@ def place_order():
     
         for product2 in cart_products2:
             execute_query(cursor,
-                "INSERT INTO order_items2 (order_id, name, price, quantity, subtotal) VALUES (?, ?, ?, ?, ?)",
-                (order_id2, product2["name"], product2["price"], product2["quantity"], product2["subtotal"]))
+                "INSERT INTO order_items2 (order_id, product_id, name, price, quantity, subtotal) VALUES (?, ?, ?, ?, ?, ?)",
+                (order_id2, product2["id"], product2["name"], product2["price"], product2["quantity"], product2["subtotal"]))
 
         for key, qty in cart_data2.items():
             execute_query(cursor,
@@ -452,13 +482,14 @@ def cancel_order(order_id):
             flash("This order cannot be cancelled")
             return redirect(url_for("profile"))
         
-        execute_query(cursor, "SELECT name, quantity FROM order_items2 WHERE order_id = ?", (order_id,))
+        execute_query(cursor, "SELECT product_id, quantity FROM order_items2 WHERE order_id = ?", (order_id,))
         items = cursor.fetchall()
 
         for item in items:
-            execute_query(cursor,
-                        "UPDATE products2 SET stock = stock + ? WHERE name = ?",
-                        (item["quantity"], item["name"]))
+            if item["product_id"] is not None:
+                execute_query(cursor,
+                        "UPDATE products2 SET stock = stock + ? WHERE id = ?",
+                        (item["quantity"], item["product_id"]))
 
         conn.commit()
     except Exception:
@@ -557,15 +588,14 @@ def admin_edit_product(product_id):
     if not admin_required():
         return redirect(url_for("login"))
 
-    name = request.form["name"].strip()
-    price = float(request.form["price"])
-    stock = int(request.form["stock"])
+    data = read_product_form()
     new_image = save_image(request.files.get("image_file"))
-    image = new_image or request.form["image"].strip()
+    image = new_image or request.form.get("image", "").strip()
 
-    if not name or not image or price < 0 or stock < 0:
+    if data is None or not image:
         flash("Invalid values")
         return redirect(url_for("admin_products"))
+    name, price, stock = data
 
     conn = get_db()
     cursor = conn.cursor()
@@ -587,15 +617,13 @@ def admin_add_product():
     if not admin_required():
         return redirect(url_for("login"))
 
-    name = request.form["name"].strip()
-    price = float(request.form["price"])
-    stock = int(request.form["stock"])
+    data = read_product_form()
     image = save_image(request.files.get("image_file"))
 
-    if not name or not image or price < 0 or stock < 0:
+    if data is None or not image:
         flash("Invalid values")
         return redirect(url_for("admin_products"))
-
+    name, price, stock = data
 
     conn = get_db()
     cursor = conn.cursor()
@@ -625,6 +653,7 @@ def admin_delete_product(product_id):
     conn = get_db()
     cursor = conn.cursor()
     execute_query(cursor, "DELETE FROM products2 WHERE id = ?", (product_id,))
+    execute_query(cursor, "DELETE FROM cart_items2 WHERE product_id = ?", (product_id,))
     conn.commit()
     conn.close()
 
@@ -767,7 +796,8 @@ def profile():
 
     return render_template("profile.html", user=user, orders2=orders_with_items)
 
-DEBUG_MODE = os.getenv("FLASK_DEBUG", "0") == "1"
+
+
 
 if __name__ == "__main__":
     app.run(debug=DEBUG_MODE)

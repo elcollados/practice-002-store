@@ -32,13 +32,13 @@ The demo account can view the admin pages but cannot change anything. Customer n
 
 Python, Flask, SQLite (local), PostgreSQL (live), HTML, CSS, Flask-WTF, Flask-Limiter
 
-## What I leanred
+## What I learned
 
 - Flask routes, templates and sessions
 - SQL with SQLite and PostgreSQL
 - Login security: password hashing, CSRF protection, rate limiting
 - Deploying a Flask app on Render
-
+[review notes](REVIEW.md)
 
 ## Screenshots
 
@@ -57,9 +57,9 @@ Python, Flask, SQLite (local), PostgreSQL (live), HTML, CSS, Flask-WTF, Flask-Li
 5. Run: `python app.py`
 6. Open `http://127.0.0.1:5000`
 
-To make an admin locally, register a user, then set `is_admin = 1`
+To make an admin locally, register a user, then set `is_admin = 1` in the 'users2' table.
 
 ## About this project
 
-I build this while learning Flask, I used AI to help write much of the code. I typed it myself, tested it, and learned how each parts works.
+I built this while learning Flask, I used AI to help write most of the code. I typed it myself, tested it, and learned how each part works.
 Product images are for demo only.

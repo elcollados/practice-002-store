@@ -18,7 +18,7 @@
             {% for product2 in cart_products2 %}
             <div class="product">
                 <a class="name" href="{{ url_for('product_detail', product2_id=product2.id) }}">{{ product2.name }}</a>
-                <p class="price">${{ product2.price }}</p>
+                <p class="price">${{ product2.price|money }}</p>
 
                 <div class="qty-row">
                     <form method="POST" action="{{ url_for('decrease_quantity', product2_id=product2['id']) }}">
@@ -45,7 +45,7 @@
         </section>
 
         <p class="summary">Total items: {{ total_quantity2 }}</p>
-        <p class="summary"><strong>Total price: ${{ total_price2 }}</strong></p>
+        <p class="summary"><strong>Total price: ${{ total_price2|money }}</strong></p>
 
         <div class="btn-row">
             <a class="btn btn-outline" href="{{ url_for('home') }}">Continue shopping</a>

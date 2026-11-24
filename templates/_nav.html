@@ -13,6 +13,9 @@
     <a href="{{ url_for('cart') }}"><i class="fa-solid fa-cart-shopping"></i> Cart ({{ cart_count }})</a>
     <a href="{{ url_for('profile') }}"><i class="fa-solid fa-user"></i> Profile</a>
     {% if session.get('user_id') %}
-        <a href="{{ url_for('logout') }}" class="logout-link"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
+        <form method="post" action="{{ url_for('logout') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="logout"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
+        </form>
     {% endif %}
 </nav>

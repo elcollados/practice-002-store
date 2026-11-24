@@ -23,7 +23,7 @@
             {% for product2 in results %}
             <div class="product">
                 <a class="name" href="{{ url_for('product_detail', product2_id=product2.id) }}">{{ product2.name }}</a>
-                <p class="price">${{ product2.price }}</p>
+                <p class="price">${{ product2.price|money }}</p>
 
                 <a class="btn" href="{{ url_for('product_detail', product2_id=product2.id) }}">View</a>
             </div>

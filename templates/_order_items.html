@@ -1,6 +1,6 @@
 {% for item2 in order2.products %}
 <div class="order-item">
     <h3>{{ item2.name }}</h3>
-    <p>${{ item2.price }} x {{ item2.quantity }} pcs = <span class="subtotal">${{ item2.subtotal }}</span></p>
+    <p>${{ item2.price|money }} x {{ item2.quantity }} pcs = <span class="subtotal">${{ item2.subtotal|money }}</span></p>
 </div>
 {% endfor %}

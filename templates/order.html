@@ -13,7 +13,12 @@
         <h2>Order #{{ order_id }}</h2>
         <nav>
             <a href="{{ url_for('profile') }}"><i class="fa-solid fa-user"></i> Profile</a>
-            <a href="/logout"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
+        {% if session.get('user_id') %}
+            <form method="post" action="{{ url_for('logout') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="logout"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
+            </form>
+        {% endif %}
         </nav>
     </header>
 
@@ -27,7 +32,7 @@
             </div>
         </section>
 
-        <p class="price">Total: ${{ order2.total }}</p>
+        <p class="price">Total: ${{ order2.total|money }}</p>
         <a class="btn" href="{{ url_for('home') }}">Continue shopping</a>
     </main>
 </body>
