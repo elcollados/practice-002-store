@@ -61,5 +61,4 @@ To make an admin locally, register a user, then set `is_admin = 1` in the 'users
 
 ## About this project
 
-I built this while learning Flask, I used AI to help write most of the code. I typed it myself, tested it, and learned how each part works.
-Product images are for demo only.
+I built this while learning Flask. I used AI to help write most of the code. I typed it myself, tested it, and studied how each part works. Product images are for demo only.
