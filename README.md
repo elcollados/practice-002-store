@@ -38,7 +38,7 @@ Python, Flask, SQLite (local), PostgreSQL (live), HTML, CSS, Flask-WTF, Flask-Li
 - SQL with SQLite and PostgreSQL
 - Login security: password hashing, CSRF protection, rate limiting
 - Deploying a Flask app on Render
-[review notes](REVIEW.md)
+- [review notes](REVIEW.md)
 
 ## Screenshots
 
@@ -50,8 +50,8 @@ Python, Flask, SQLite (local), PostgreSQL (live), HTML, CSS, Flask-WTF, Flask-Li
 
 ## How to run
 
-1. Clone the project: `git clone https://github.com/elcollados/Store-website.git`
-2. Go into the folder: `cd Store-website`
+1. Clone the project: `git clone https://github.com/elcollados/practice-002-store.git`
+2. Go into the folder: `cd practice-002-store`
 3. Install packages: `pip install -r requirements.txt`
 4. Create a `.env` file with: `SECRET_KEY=<any long random text>`
 5. Run: `python app.py`
